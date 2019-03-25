@@ -4,17 +4,21 @@ const fs = require('fs');
 const cheerio = require('cheerio');
 const got = require('got');
 const each = require('async-each');
+const URL = require('url')
 
-const parentUrl = 'http://www.w3schools.com/cssref/';
-const childUrl = (url) => `${parentUrl}${url}`;
+const parentUrl = 'https://www.w3schools.com/cssref/';
+const childUrl = (url) => {
+	return URL.resolve(parentUrl,url)
+};
 const results = [];
 
 const getPropValues = (url) => {
+	console.log(url)
   return new Promise((resolve, reject) => {
     got(childUrl(url))
       .then(response => {
         let $child = cheerio.load(response.body);
-        let $rows = $child('.w3-table-all tr');
+        let $rows = $child('.w3-table-all.notranslate tr');
         let results = [];
 
         $rows.each((i, row) => {
@@ -31,7 +35,7 @@ const getPropValues = (url) => {
 };
 
 const saveResults = () => {
-  fs.writeFile('css-properties-values.json', JSON.stringify(results));
+  fs.writeFile('css-properties-values.json', JSON.stringify(results,null,2), ()=>console.log('done'));
 }
 
 got(parentUrl)
@@ -52,6 +56,9 @@ got(parentUrl)
           // get values of property
           getPropValues(childUrl)
             .then((values) => {
+		    if (values) {
+			    values = values.map(v=>v.trim())
+		    }
               results.push({
                 property,
                 values
